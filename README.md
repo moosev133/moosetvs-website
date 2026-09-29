@@ -1,5 +1,7 @@
 # MooseTVs business website
 
+> The current premium, multilingual implementation is documented in [REDESIGN.md](REDESIGN.md). Use its build, authentication and editing instructions. The remainder below documents the original `65b98a6` release and is retained as historical context.
+
 Static, dependency-free business website replacing the original trading site. Content and shared components are authored in `src/`, with browser assets in `public/`. Node generates complete HTML for all routes so SEO and Netlify Forms do not depend on client-side rendering.
 
 ## Local development

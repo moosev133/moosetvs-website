@@ -4,9 +4,15 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node scripts/build.mjs",
+    "build": "node scripts/build-premium.mjs",
     "dev": "node scripts/serve.mjs",
-    "test": "node scripts/check.mjs"
+    "test": "node --test tests/site.test.mjs tests/auth.test.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.57.4",
+    "esbuild": "^0.28.2"
+  }
 }
