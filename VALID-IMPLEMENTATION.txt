@@ -1,10 +1,13 @@
-VALID / MOOSETVS — September 30, 2026
+VALID / MOOSETVS — October 1, 2026
 
 Recovery
 The complete pre-3D repository (including .git and uncommitted work) is saved at:
 ../MooseTVs-backups/moosetvs-before-valid-3d-2026-09-30-2228.zip
 Restore into a NEW folder. Do not extract over the working checkout.
 Historical version 65b98a6 remains intact in Git and its separate archive.
+The first published 3D version is also preserved in:
+../MooseTVs-backups/moosetvs-valid-3d-5b1f533.zip
+../MooseTVs-backups/moosetvs-valid-history-5b1f533.bundle
 
 Character
 public/valid/valid.glb is derived from the user-supplied standing base-2.obj.
@@ -20,20 +23,40 @@ Reproducible preparation scripts, source metrics and tests remain in the sibling
 MooseTVs-Valid-lab folder. No paid animation service is required at runtime.
 
 Implementation
-src/redesign/valid.mjs: localized document stages, range illustration, controls.
-src/browser/valid.js: one WebGL renderer, loaded on pages with a character stage;
-14-bone animation, accessories, page-relative placement, bounded transitions.
-src/browser/valid-core.mjs: pure route, curve and navigation helpers.
+src/redesign/valid.mjs: localized content anchors, rising 0-X rail and controls.
+src/browser/valid.js: one viewport-sized transparent perspective renderer,
+one continuous 3D actor position, curved/depth-aware walks and section flights.
+The canvas is a rendering surface, not a corner widget or cursor replacement.
+Valid targets whitespace and avoids resting on headings and call-to-action buttons.
+No new model or renderer is created when the visitor scrolls between sections.
+Welcome: ease in from an offscreen corner, close-up wave, then an arcing jump
+into the actual page. The same model, camera and position continue after landing.
+Service navigation: a large corner-cast web catches and slings Valid; binary
+glyphs sampled from the skinned mesh form his full body before dispersing.
+A short-lived, destination-bound session handoff triggers the corresponding
+arrival/reassembly on the next full HTML page. Navigation is not an SPA rewrite.
+src/browser/valid-robot.js: independent jointed robot geometry with visor,
+mechanical muzzle, circuit antlers, armored limbs and emissive accents.
+src/browser/valid-particles.js: real 0/1 glyphs following skinned body vertices.
+src/browser/valid-props.js: glasses, web emblem, parcel, eyes and contact shadow.
+src/browser/valid-core.mjs: pure travel curves, random destinations, route guards
+and validated handoff helpers. Slide starts at upper-right X, ends at lower-left 0.
+Sitting bends the hips and knees, with the seat in contact with the curve.
+Procedural poses restore the mixer's previous unmodified skeleton each frame,
+preventing flying/sitting offsets from accumulating on constant animation tracks.
 src/browser/motion.js: typography/chart/scenes and saved motion preferences.
-public/valid.css: reserved in-content space, mobile and RTL styling.
+public/valid.css: in-content whitespace, full-screen effects, mobile/RTL styling.
 Three.js is dynamically split out of the main authentication bundle.
 No WebGL renderer, 3D module or model download on account and enquiry routes.
-Animations rest after their sequence; offscreen/hidden tabs stop rendering.
+Animations rest after their bounded sequence; hidden tabs stop rendering.
 The OS reduced-motion preference overrides the saved motion setting.
 Hide Valid and Pause motion persist on this device. Welcome runs once per tab;
 Replay welcome is optional. Skip, Escape and scroll dismiss it immediately.
-Navigation retains regular modified-click/new-tab behavior and a 540ms maximum
-character transition. Links work normally without JavaScript or WebGL.
+Navigation retains modified-click/new-tab behavior and bounded 0.75-1.95 second
+outgoing transitions with a 450ms navigation watchdog if rendering stalls.
+Escape cancels a departure. Links work normally without JavaScript or WebGL.
+Cross-document View Transitions are not required (avoids browser opt-in errors).
+All rendering assets stay on the same origin; the strict CSP remains unchanged.
 All character labels and pricing text have English, Hebrew and Arabic copies.
 
 Pricing
