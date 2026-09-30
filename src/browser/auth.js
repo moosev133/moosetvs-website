@@ -1,6 +1,7 @@
 import {createAuthService,authErrorKey} from './auth-service.mjs';
 import {t,localPath} from './site.js';
 import './demos.js';
+import './motion.js';
 const config=JSON.parse(document.getElementById('auth-config').textContent);
 const form=document.querySelector('[data-auth-form]');
 const protectedPage=document.querySelector('[data-account-content]');

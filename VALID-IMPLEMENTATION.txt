@@ -1,0 +1,58 @@
+VALID / MOOSETVS — September 30, 2026
+
+Recovery
+The complete pre-3D repository (including .git and uncommitted work) is saved at:
+../MooseTVs-backups/moosetvs-before-valid-3d-2026-09-30-2228.zip
+Restore into a NEW folder. Do not extract over the working checkout.
+Historical version 65b98a6 remains intact in Git and its separate archive.
+
+Character
+public/valid/valid.glb is derived from the user-supplied standing base-2.obj.
+Source SHA256: 8e805495c3851347a11de36df5be2efbb1df5920956e203bc15fcc3d1e0823b5
+500,000 original triangles -> 29,994 triangles, 14,965 vertices, 14 bones.
+GLB size: 1,349,264 bytes. Embedded clips: walk, idle, wave.
+Original OBJ and walking MP4 were not modified or uploaded to the website.
+The walking video is a visual reference, not extracted skeletal motion capture.
+Colors use the approved standing artwork projected onto vertex colors plus
+procedural rear colors. This is a web-optimized stylized rig, not a film-quality
+facial rig or hand-painted 360-degree texture atlas.
+Reproducible preparation scripts, source metrics and tests remain in the sibling
+MooseTVs-Valid-lab folder. No paid animation service is required at runtime.
+
+Implementation
+src/redesign/valid.mjs: localized document stages, range illustration, controls.
+src/browser/valid.js: one WebGL renderer, loaded on pages with a character stage;
+14-bone animation, accessories, page-relative placement, bounded transitions.
+src/browser/valid-core.mjs: pure route, curve and navigation helpers.
+src/browser/motion.js: typography/chart/scenes and saved motion preferences.
+public/valid.css: reserved in-content space, mobile and RTL styling.
+Three.js is dynamically split out of the main authentication bundle.
+No canvas, 3D code or model download on account and enquiry routes.
+Animations rest after their sequence; offscreen/hidden tabs stop rendering.
+The OS reduced-motion preference overrides the saved motion setting.
+Hide Valid and Pause motion persist on this device. Welcome runs once per tab;
+Replay welcome is optional. Skip, Escape and scroll dismiss it immediately.
+Navigation retains regular modified-click/new-tab behavior and a 540ms maximum
+character transition. Links work normally without JavaScript or WebGL.
+All character labels and pricing text have English, Hebrew and Arabic copies.
+
+Pricing
+Starter website: from $269 (illustrative ₪942).
+Business website: from $549 (illustrative ₪1,922).
+AI automation: from $319 (illustrative ₪1,117).
+Maintenance: $25/month (illustrative ₪88).
+Managed automation support: $89/month (illustrative ₪312).
+USD1 = ILS3.50 is an explicitly illustrative display rate, not a live FX quote.
+The homepage 0–X slide is labeled as a scope illustration, not a price scale.
+
+Build / verify
+npm ci
+npm run build
+npm test
+npm run dev
+
+Deployment boundaries
+Netlify deploys main from moosev133/moosetvs-website.
+No Contabo, VPN, DNS, nameserver or email record changes are required.
+Existing Supabase integration needs real project public configuration in Netlify
+before sign-up/sign-in can be activated. Missing credentials are not faked.

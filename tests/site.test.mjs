@@ -13,7 +13,7 @@ async function walk(dir){const all=[];for(const e of await readdir(dir,{withFile
 const files=(await walk(root)).filter(p=>extname(p)==='.html'&&!p.includes('/downloads/'));
 test('all routes have semantic, localized HTML and intact local references',async()=>{
  const titles=new Set();let refs=0;
- assert.equal(files.length,132);
+ assert.equal(files.length,141);
  for(const file of files){
   const html=await readFile(file,'utf8');const lang=html.match(/<html lang="(\w+)"/)?.[1];assert(['en','he','ar'].includes(lang));
   assert(html.includes(`dir="${lang==='en'?'ltr':'rtl'}"`));assert.equal((html.match(/<h1\b/g)||[]).length,1,file);
@@ -36,7 +36,7 @@ test('all template and runtime strings have complete dedicated locale catalogs',
  const keys=Object.keys(catalogs.en).sort();for(const lang of ['he','ar'])assert.deepEqual(Object.keys(catalogs[lang]).sort(),keys);
  for(const lang of ['en','he','ar']){const ctx=context(lang);sitePages(ctx);demoPages(ctx);header(ctx,'');footer(ctx);}
  for(const key of usedMessages)for(const lang of ['en','he','ar'])assert(catalogs[lang][key],`${lang}: ${key}`);
- for(const name of ['site.js','auth.js','demos.js','auth-service.mjs']){
+ for(const name of ['site.js','auth.js','demos.js','auth-service.mjs','motion.js','valid.js']){
   const src=await readFile(`src/browser/${name}`,'utf8');
   for(const [,key] of src.matchAll(/(?:\bt|\btr|\bsay)\('([^']*)'/g))if(key)assert(catalogs.en[key],`Runtime translation missing: ${key}`);
  }
@@ -49,7 +49,7 @@ test('all localized forms keep Netlify names, required fields and localized dest
  }
 });
 test('project schema generates detail pages and valid demo links',async()=>{
- const slugs=new Set();for(const p of projects){assert(!slugs.has(p.slug));slugs.add(p.slug);for(const key of ['title','slug','category','shortDescription','fullDescription','technologies','screenshots','status','demoUrl','githubUrl','featured','year'])assert(Object.hasOwn(p,key),key);assert(p.demoUrl.startsWith('/demos/'));if(p.githubUrl)assert(new URL(p.githubUrl).protocol==='https:');for(const lang of ['en','he','ar'])await stat(`dist${href('work/'+p.slug,lang)}index.html`);}
+ const slugs=new Set();for(const p of projects){assert(!slugs.has(p.slug));slugs.add(p.slug);for(const key of ['title','slug','category','shortDescription','fullDescription','technologies','screenshots','status','demoUrl','githubUrl','featured','year'])assert(Object.hasOwn(p,key),key);if(p.demoUrl)assert(p.demoUrl.startsWith('/demos/'));if(p.githubUrl)assert(new URL(p.githubUrl).protocol==='https:');for(const lang of ['en','he','ar'])await stat(`dist${href('work/'+p.slug,lang)}index.html`);}
 });
 test('account pages have no indexed or embedded private user data',async()=>{
  const sitemap=await readFile('dist/sitemap.xml','utf8');for(const route of ['account','sign-in','sign-up','forgot-password','reset-password','thank-you']){
