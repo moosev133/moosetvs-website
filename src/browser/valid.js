@@ -96,9 +96,10 @@ export async function initValid({canMove,isHidden}){
    if(!canMove()||elapsed>2.8){finishIntro();return;}
    setLook('natural');play('wave');mixer.update(dt);
    const mobile=innerWidth<760,arrive=ease(elapsed/.6),leave=ease((elapsed-2.15)/.65);
-   actor.style.transform=`translate3d(${mobile?innerWidth*.1:innerWidth*.52}px,${innerHeight*(mobile?.42:.29)+(1-arrive)*170+leave*innerHeight}px,0)`;
+   actor.style.transform='translate3d(0,0,0)';shadow.visible=false;
    const peek=1-ease((elapsed-.3)/.85);
-   character.scale.setScalar((mobile?1.13:1.25)+peek*1.15);character.rotation.set(0,-.18,-.13+arrive*.09);character.position.set(0,.02-peek*1.3,0);
+   character.scale.setScalar((mobile?.85:.97)+peek*(mobile?.8:.63));character.rotation.set(0,-.18,-.13+arrive*.09);
+   character.position.set(camera.right*(mobile?.15:.52),(mobile?-.22:-.13)-peek*(mobile?1.43:1.07)-(1-arrive)*1.3-leave*4,0);
    overlay.style.opacity=String(1-leave);renderer.render(scene,camera);wake();return;
   }
   chooseStage();

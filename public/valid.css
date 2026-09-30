@@ -28,7 +28,7 @@ html[data-valid-visible=true] .service-scene[data-valid-active=true]>*{opacity:0
 .valid-web-thread{display:none;position:absolute;top:0;left:52%;height:45px;width:1px;background:linear-gradient(transparent,#9aa98b);transform:rotate(13deg);transform-origin:bottom}
 .valid-binary{display:none;position:absolute;top:18%;bottom:15%;left:0;right:0;overflow:hidden;font:14px/1.8 monospace;letter-spacing:16px;color:#728760;text-shadow:35px -12px #bdac7b,-20px 25px #769d92;opacity:.6;white-space:nowrap}
 .valid-actor[data-look=binary] .valid-binary{display:block}
-.valid-actor.valid-intro{position:fixed;z-index:91;width:min(600px,90vw);height:min(570px,75vh);contain:layout style}
+.valid-actor.valid-intro{position:fixed;z-index:91;width:100vw;height:100vh;contain:layout style}
 .valid-actor.valid-intro .valid-bubble{display:none}
 .valid-welcome{position:fixed;inset:0;background:radial-gradient(ellipse at 72% 80%,#384537,#191f1c 70%);z-index:90;overflow:hidden;color:#f5f4ea;pointer-events:none}
 .valid-welcome-copy{position:absolute;top:18%;left:max(8vw,24px);max-width:460px;right:24px}
