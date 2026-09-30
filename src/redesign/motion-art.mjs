@@ -15,4 +15,3 @@ export function newProjectVisual(kind,ctx){
  if(kind==='fulfilment')return `<div class="project-art fulfilment-art" aria-hidden="true"><div class="dispatch-card"><div class="dispatch-heading"><span>FIELDNOTES / STUDIO</span>${icon('box')}</div><div class="dispatch-package"><div class="package-top"></div><div class="package-face"><span>f.</span><i></i><small>#0248</small></div></div><div class="dispatch-route"><span class="dispatch-stop">${icon('check')}<small>${t('Picked')}</small></span><i></i><span class="dispatch-stop">${icon('check')}<small>${t('Packed')}</small></span><i></i><span class="dispatch-stop last">${icon('arrow')}<small>${t('On its way')}</small></span></div></div><span class="art-caption">${t('Fulfilment experience concept')}</span></div>`;
  return null;
 }
-

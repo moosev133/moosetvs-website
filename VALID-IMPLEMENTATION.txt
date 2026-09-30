@@ -27,7 +27,7 @@ src/browser/valid-core.mjs: pure route, curve and navigation helpers.
 src/browser/motion.js: typography/chart/scenes and saved motion preferences.
 public/valid.css: reserved in-content space, mobile and RTL styling.
 Three.js is dynamically split out of the main authentication bundle.
-No canvas, 3D code or model download on account and enquiry routes.
+No WebGL renderer, 3D module or model download on account and enquiry routes.
 Animations rest after their sequence; offscreen/hidden tabs stop rendering.
 The OS reduced-motion preference overrides the saved motion setting.
 Hide Valid and Pause motion persist on this device. Welcome runs once per tab;
