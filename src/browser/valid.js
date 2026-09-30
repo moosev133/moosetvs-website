@@ -8,10 +8,12 @@ import {makeBodyDigits} from './valid-particles.js';
 import {makeProps,makeShadow} from './valid-props.js';
 import {paintEyes} from './valid-eyes.mjs';
 import {initProcess} from './valid-process.mjs';
+import {makeWeb} from './valid-web.mjs';
+import {webEnvelope,webDeparture} from './valid-web-core.mjs';
 
 export async function initValid({canMove,isHidden}){
  const actor=document.querySelector('[data-valid]'),canvas=actor.querySelector('canvas'),bubble=actor.querySelector('.valid-bubble');
- const overlay=document.querySelector('[data-valid-welcome]'),skip=overlay.querySelector('button'),webFX=document.querySelector('[data-valid-web]');
+ const overlay=document.querySelector('[data-valid-welcome]'),skip=overlay.querySelector('button');
  const touch=document.querySelector('[data-valid-touch]'),status=document.querySelector('[data-valid-status]');
  const stages=[...document.querySelectorAll('[data-valid-stage]')],route=document.body.dataset.route,rtl=document.documentElement.dir==='rtl';
  const baseLook=serviceLook(route)||'natural';
@@ -39,6 +41,7 @@ export async function initValid({canMove,isHidden}){
  const actions=Object.fromEntries(gltf.animations.map(clip=>[clip.name,mixer.clipAction(clip)]));
  const baseline=mesh.skeleton.bones.map(bone=>({bone,q:bone.quaternion.clone(),p:bone.position.clone()}));
  const props=makeProps(bones,character),robot=makeRobot(bones),digits=makeBodyDigits(mesh,innerWidth<760?700:1100),shadow=makeShadow();scene.add(shadow);
+ const web=makeWeb({mobile:innerWidth<760});scene.add(web.group);
  const naturalHeight=()=>innerWidth<760?128:167;
  const unit=()=>2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.position.z/height;
  function project(px,py,z=0){const k=unit()*(1-z/camera.position.z);return new THREE.Vector3((px-width/2)*k,(height/2-py)*k,z);}
@@ -156,14 +159,11 @@ export async function initValid({canMove,isHidden}){
    if(active&&['process','slide'].includes(active.dataset.validStage))travel={from:{...point},to:stageTargetStable(active,point),start:clock,duration:wasRun?1.1:.45};
   }
  }
- function drawWeb(center,growth=1,opacity=1){
-  webFX.removeAttribute('hidden');webFX.style.opacity=String(opacity);webFX.setAttribute('viewBox',`0 0 ${width} ${height}`);
-  const origin={x:rtl?0:width,y:0},radius=Math.min(width*.43,310)*growth,cy=center.y-pose.height*.44,lines=[];
-  for(let i=0;i<12;i++){const a=i*Math.PI/6,ex=center.x+Math.cos(a)*radius,ey=cy+Math.sin(a)*radius*.72;lines.push(`M${origin.x} 0 Q${(origin.x+ex)/2} ${ey*.08} ${ex} ${ey} L${center.x} ${cy}`);}
-  for(let ring=1;ring<=5;ring++){const r=radius*ring/5,points=Array.from({length:13},(_,i)=>{const a=i*Math.PI/6;return [center.x+Math.cos(a)*r,cy+Math.sin(a)*r*.72];});lines.push(points.map(([x,y],i)=>`${i?'L':'M'}${x} ${y}`).join(''));}
-  webFX.querySelector('path').setAttribute('d',lines.join(' '));
+ function drawWeb(progress,arriving=false){
+  web.update({origin:project(rtl?-30:width+30,-35,2.6),center:project(point.x,point.y-pose.height*.44,point.z),unit:unit(),pixelRadius:Math.min(width*.45,height*.43,300),progress,arriving,direction:rtl?-1:1,clock});
+  actor.dataset.webPhase=webEnvelope(progress,arriving).phase;
  }
- function hideWeb(){webFX.setAttribute('hidden','');}
+ function hideWeb(){web.hide();delete actor.dataset.webPhase;}
  function endIntro(){if(!intro)return;intro=null;delete actor.dataset.welcomePhase;document.documentElement.dataset.validWelcoming='false';overlay.hidden=true;overlay.style.opacity='';actor.classList.remove('valid-intro');pose.height=naturalHeight();pose.roll=0;pose.air=0;introResolve?.();introResolve=null;until=clock+4;wake();}
  function welcome(force=false){
   const allowed=force?canMove()&&!isHidden():eligible()&&shouldWelcome({home:route==='',seen:readPreference(storage,'moosetvs_valid_welcome')==='yes',reduced:!canMove(),paused:isHidden(),scrollY});
@@ -213,18 +213,18 @@ export async function initValid({canMove,isHidden}){
   const u=clamp((clock-arrival.start)/arrival.duration,0,1);look=arrival.look;actor.dataset.journeyPhase=look+'-assemble';play('idle');advancePose(dt);const landing=safePoint(active?stageTargetStable(active,arrival.to):arrival.to);pose.height=naturalHeight();pose.sit=0;let binary=0,spread=0;
   if(look==='binary'){point=landing;binary=1-ease((u-.75)/.25);spread=(1-ease(u/.62))*2.3;pose.yaw=Math.sin(u*Math.PI)*.4;pose.air=0;}
   else{point=glidePoint(arrival.from,landing,u,80);pose.air=Math.sin(u*Math.PI);pose.roll=(rtl?-1:1)*Math.sin(u*Math.PI)*.6;pose.yaw=Math.sin(u*Math.PI)*1.2;}
-  if(look==='web'&&u<.5)drawWeb(point,1-u,.65*(1-u*2));else hideWeb();poseBody('hello',0,pose.air);render(dt,{binary,spread});
-  if(u>=1){arrival=null;delete actor.dataset.journeyPhase;pose.roll=0;pose.air=0;restUntil=clock+.7;landedAt=clock;until=clock+6;}
+  if(look==='web')drawWeb(u,true);else hideWeb();poseBody('hello',0,pose.air);render(dt,{binary,spread});
+  if(u>=1){arrival=null;hideWeb();delete actor.dataset.journeyPhase;pose.roll=0;pose.air=0;restUntil=clock+.7;landedAt=clock;until=clock+6;}
  }
  function depart(dt){
   const u=clamp((clock-transit.start)/transit.duration,0,1),from=transit.from;look=transit.look;play('idle');advancePose(dt);pose.sit=0;pose.air=0;let binary=0,spread=0;
   actor.dataset.journeyPhase=look+'-'+(u<.35?'cast':u<.65?'capture':'release');
   if(look==='web'){
-   const caught={x:from.x+(rtl?-1:1)*55,y:from.y-75,z:1};if(u<.6){point=glidePoint(from,caught,u/.6,20);drawWeb(point,ease(u/.3),ease(u/.16));pose.roll=(rtl?-1:1)*Math.sin(u/.6*Math.PI)*.3;}
-   else{const v=(u-.6)/.4;point=glidePoint(caught,{x:rtl?-160:width+160,y:-200,z:-2},v,100);drawWeb(point,1-v*.8,1-v);pose.roll=(rtl?-1:1)*v*1.5;pose.air=1;}
+   const capture=webDeparture(from,u,{width,rtl});point=capture.point;pose.air=capture.air;pose.roll=capture.roll;pose.yaw=THREE.MathUtils.lerp(transit.yaw,capture.yaw,ease(u/.26));drawWeb(u);
   }else if(look==='binary'){point={...from};pose.height=naturalHeight()*(1+.32*Math.sin(u*Math.PI));binary=ease(u/.3);spread=ease((u-.52)/.48)*2.7;pose.yaw=THREE.MathUtils.damp(pose.yaw,0,5,dt);}
   else{const box=transit.target.getBoundingClientRect(),to={x:box.left+box.width/2,y:box.top+box.height/2,z:-2};point=glidePoint(from,to,u,85);pose.air=Math.sin(u*Math.PI);pose.height=naturalHeight()*(1-ease((u-.55)/.45)*.72);pose.roll=look==='package'?u*.55:0;}
-  poseBody('hello',0,pose.air);render(dt,{binary,spread,robotAmount:look==='robot'?ease(u/.5):undefined,opacity:look==='binary'?1-ease((u-.8)/.2):1});if(u>=1)navigate();
+  poseBody('hello',0,pose.air);if(look==='web'){const tension=webEnvelope(u).tension;bones.ForearmL.rotation.x-=tension*.55;bones.ForearmR.rotation.x-=tension*.55;bones.Head.rotation.z+=(rtl?-1:1)*tension*.1;}
+  render(dt,{binary,spread,robotAmount:look==='robot'?ease(u/.5):undefined,opacity:look==='binary'?1-ease((u-.8)/.2):1});if(u>=1)navigate();
  }
  function navigate(){if(!transit)return;const url=transit.url;writePreference(storage,'moosetvs_valid_journey',JSON.stringify({look:transit.look,path:new URL(url).pathname,at:Date.now()}));clearTimeout(navTimer);location.assign(url);}
  function cancelTransit(){clearTimeout(navTimer);transit=null;delete actor.dataset.journeyPhase;hideWeb();pose.height=naturalHeight();pose.roll=0;until=clock+2;wake();}
@@ -260,7 +260,7 @@ export async function initValid({canMove,isHidden}){
  document.addEventListener('click',event=>{
   const link=event.target.closest('a[href]');if(!canAnimateLink(event,link,location.origin)||!canMove()||!eligible()||intro||actor.hidden)return;
   const next=serviceLook(link.pathname)||(link.pathname.replace(/\/$/,'').endsWith('/pricing')?'natural':null);if(!next||link.pathname===location.pathname)return;
-  event.preventDefault();cancelTransit();cancelReaction();arrival=null;roam=null;travel=null;transit={url:link.href,target:link,look:next,start:clock,duration:journeyDuration[next]/1000,from:{...point}};
+  event.preventDefault();cancelTransit();cancelReaction();arrival=null;roam=null;travel=null;transit={url:link.href,target:link,look:next,start:clock,duration:journeyDuration[next]/1000,from:{...point},yaw:pose.yaw};
   // A real navigation cannot be held hostage by a stalled render loop.
   navTimer=setTimeout(navigate,journeyDuration[next]+450);wake();
  });
@@ -268,6 +268,6 @@ export async function initValid({canMove,isHidden}){
  window.addEventListener('pagehide',()=>{clearTimeout(navTimer);cancelAnimationFrame(frame);frame=0;});window.addEventListener('pageshow',event=>{if(event.persisted){cancelTransit();cancelReaction();endIntro();arrival=null;last=0;wake();}});
  new ResizeObserver(()=>{until=clock+1;wake();}).observe(document.querySelector('main'));
  play('idle');advancePose(.001);size();chooseStage();if(active)point=safePoint(stageTarget(active));travel=null;pose.height=naturalHeight();
- if(canMove()&&(handoff||baseLook==='binary')){arrival={look:handoff?.look||baseLook,start:clock,duration:handoff?.look==='web'?1.4:1.8,from:{x:rtl?-120:width+120,y:-130,z:0},to:{...point}};document.documentElement.dataset.validArrival='true';}
+ if(canMove()&&(handoff||baseLook==='binary')){arrival={look:handoff?.look||baseLook,start:clock,duration:handoff?.look==='web'?1.55:1.8,from:{x:rtl?-120:width+120,y:-130,z:0},to:{...point}};document.documentElement.dataset.validArrival='true';}
  wake();return {sync,welcome};
 }

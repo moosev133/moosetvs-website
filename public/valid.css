@@ -27,8 +27,6 @@ html[data-valid-support=ready][data-motion=on] [data-process-animated=true] .val
 .valid-touch{position:fixed;z-index:33;min-width:44px;min-height:44px;padding:0;border:0;background:transparent;border-radius:46%;cursor:pointer;touch-action:pan-y;-webkit-tap-highlight-color:transparent;user-select:none}
 .valid-touch:focus-visible{outline:2px dashed #af9566;outline-offset:4px;background:#c6b58c0b}
 .valid-sr{position:absolute;width:1px;height:1px;padding:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
-.valid-web-cast{position:fixed;inset:0;width:100%;height:100dvh;z-index:32;pointer-events:none;overflow:visible;fill:none;stroke:#93aeb1;stroke-width:1.4;filter:drop-shadow(0 1px 1px #ffffffb0)}
-.valid-web-cast path{vector-effect:non-scaling-stroke}
 .valid-actor.valid-intro{z-index:91}
 .valid-actor.valid-intro .valid-bubble{display:none}
 main{transition:filter .7s}
@@ -56,4 +54,4 @@ html[data-valid-support=unavailable] .motion-tools>span{display:none}
 @media(max-width:760px){.valid-welcome button{top:calc(15% + 175px);bottom:auto}}
 html[data-valid-arrival=true] main{animation:valid-page-arrive .4s both}
 @keyframes valid-page-arrive{from{opacity:.35}to{opacity:1}}
-@media(prefers-reduced-motion:reduce){.valid-welcome,.valid-web-cast,.valid-touch{display:none!important}.valid-actor *,main,[data-process] *{transition:none!important;animation:none!important}.premium,html{scroll-behavior:auto}}
+@media(prefers-reduced-motion:reduce){.valid-welcome,.valid-touch{display:none!important}.valid-actor *,main,[data-process] *{transition:none!important;animation:none!important}.premium,html{scroll-behavior:auto}}

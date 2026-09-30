@@ -6,6 +6,8 @@ import * as THREE from 'three';
 import {makeRobot} from '../src/browser/valid-robot.js';
 import {paintEyes} from '../src/browser/valid-eyes.mjs';
 import {initProcess} from '../src/browser/valid-process.mjs';
+import {makeWeb} from '../src/browser/valid-web.mjs';
+import {webEnvelope,webDeparture} from '../src/browser/valid-web-core.mjs';
 import {plans} from '../src/redesign/data.mjs';
 
 test('all languages map to the same four Valid transformations',()=>{
@@ -108,4 +110,43 @@ test('localized process enhancement preserves readable semantic fallback and tap
   const page=await readFile(`dist/${lang}index.html`,'utf8');assert.equal((page.match(/data-process-detail=/g)||[]).length,5);assert.equal((page.match(/class="valid-step-name"/g)||[]).length,5);assert(page.includes('data-process-links'));assert(page.includes('data-valid-touch hidden aria-label='));assert(page.includes('data-valid-status role="status"'));assert(!page.includes('data-process-animated="true"'));
  }
  const props=await readFile('src/browser/valid-props.js','utf8');assert(!props.includes('props.face'));assert(!props.includes('const face='));
+});
+test('3D web uses reusable lit tubular geometry, depth and bounded mobile detail',()=>{
+ let desktopVertices;
+ for(const mobile of [false,true]){
+  const web=makeWeb({mobile}),position=web.geometry.attributes.position.array,normal=web.geometry.attributes.normal.array;
+  assert.equal(web.group.visible,false);assert.equal(web.stats.drawCalls,2);assert(web.stats.triangles<16000);
+  assert(web.group.children[0].material.isMeshPhysicalMaterial);assert(web.group.children[0].material.depthTest);
+  if(!mobile)desktopVertices=web.stats.vertices;else assert(web.stats.vertices<desktopVertices);
+  const params={origin:new THREE.Vector3(6,5,2),center:new THREE.Vector3(0,0,0),unit:.016,pixelRadius:mobile?170:280,direction:1};
+  for(const progress of [.05,.32,.52,.7,.95]){
+   web.update({...params,progress,clock:progress*2});assert(web.group.visible);
+   assert.equal(web.geometry.attributes.position.array,position);assert(position.every(Number.isFinite));assert(normal.every(Number.isFinite));
+   const z=position.filter((_,i)=>i%3===2);assert(Math.max(...z)-Math.min(...z)>.5);
+   const ids=web.geometry.index.array,a=new THREE.Vector3().fromArray(position,ids[0]*3),b=new THREE.Vector3().fromArray(position,ids[1]*3),c=new THREE.Vector3().fromArray(position,ids[2]*3),n=new THREE.Vector3().fromArray(normal,ids[0]*3);
+   assert(b.sub(a).cross(c.sub(a)).dot(n)>0,'tube triangles must face outward for correct silk lighting');
+  }
+  web.update({...params,progress:1});assert(!web.group.visible);
+  web.update({...params,progress:.2,arriving:true});assert(web.group.visible);
+  web.update({...params,progress:.98,arriving:true});assert(!web.group.visible);
+  web.hide();assert(!web.group.visible);web.dispose();
+ }
+});
+test('web cast, cupping catch and sling are continuous and mirrored for RTL',()=>{
+ const from={x:450,y:500,z:.2},width=1200;
+ assert.deepEqual(webDeparture(from,0,{width}).point,from);
+ let prior=from;
+ for(let i=0;i<=1000;i++){
+  const u=i/1000,m=webDeparture(from,u,{width}),rtl=webDeparture({...from,x:width-from.x},u,{width,rtl:true}),env=webEnvelope(u);
+  assert(Math.hypot(m.point.x-prior.x,m.point.y-prior.y)<12);prior=m.point;
+  assert(Math.abs(rtl.point.x-(width-m.point.x))<1e-8);assert(Math.abs(rtl.point.y-m.point.y)<1e-8);
+  for(const key of ['open','cinch','alpha','tension'])assert(env[key]>=0&&env[key]<=1);
+ }
+ assert(webDeparture(from,1,{width}).point.x>width);assert.equal(webEnvelope(.2).phase,'cast');assert.equal(webEnvelope(.5).phase,'capture');assert.equal(webEnvelope(.8).phase,'release');
+ assert.equal(webEnvelope(0).alpha,0);assert.equal(webEnvelope(1).alpha,0);assert.equal(webEnvelope(0,true).cinch,1);assert.equal(webEnvelope(1,true).alpha,0);
+});
+test('the flat SVG web is replaced by the existing 3D scene without external assets',async()=>{
+ const home=await readFile('dist/index.html','utf8'),js=await readFile('src/browser/valid.js','utf8'),css=await readFile('public/valid.css','utf8');
+ assert(home.includes('data-valid-canvas data-valid-web="3d"'));assert(!home.includes('valid-web-cast'));assert(!css.includes('valid-web-cast'));
+ assert(js.includes('scene.add(web.group)'));assert(js.includes('web.hide()'));assert(!js.includes('webFX'));
 });

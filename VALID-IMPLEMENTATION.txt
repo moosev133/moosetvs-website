@@ -6,6 +6,8 @@ Commit b67b8ac9d8a12d3bf2e3b3be3b637289edce2487, annotated Git tag
 final-moosetvs-website-2026-10-01. Verified source ZIP, complete Git bundle and
 RESTORE.txt are in ../MooseTVs-backups/Final MooseTVs Website/.
 This includes the pre-existing untracked public/locales directory, untouched.
+The approved eye/giggle/step release 4bad8b1 is also archived before the 3D-web
+upgrade: ../MooseTVs-backups/moosetvs-before-3d-web-4bad8b1.zip.
 The complete pre-3D repository (including .git and uncommitted work) is saved at:
 ../MooseTVs-backups/moosetvs-before-valid-3d-2026-09-30-2228.zip
 Restore into a NEW folder. Do not extract over the working checkout.
@@ -40,6 +42,12 @@ Service navigation: a large corner-cast web catches and slings Valid; binary
 glyphs sampled from the skinned mesh form his full body before dispersing.
 A short-lived, destination-bound session handoff triggers the corresponding
 arrival/reassembly on the next full HTML page. Navigation is not an SPA rewrite.
+src/browser/valid-web.mjs: lit tubular silk, curved tethers, a cupped capture net
+and tiny glints, rendered inside Valid's existing 3D scene and depth buffer.
+Strands pass behind/in front of the character, tilt, tighten and unfurl on arrival.
+Geometry buffers are reused, with lower detail on mobile and two draw calls.
+The former 2D SVG overlay is removed. No new asset downloads or dependencies.
+src/browser/valid-web-core.mjs: bounded cast/catch/sling timing and RTL mirroring.
 src/browser/valid-robot.js: independent jointed robot geometry with visor,
 mechanical muzzle, circuit antlers, armored limbs and emissive accents.
 src/browser/valid-particles.js: real 0/1 glyphs following skinned body vertices.
@@ -68,7 +76,7 @@ Animations rest after their bounded sequence; hidden tabs stop rendering.
 The OS reduced-motion preference overrides the saved motion setting.
 Hide Valid and Pause motion persist on this device. Welcome runs once per tab;
 Replay welcome is optional. Skip, Escape and scroll dismiss it immediately.
-Navigation retains modified-click/new-tab behavior and bounded 0.75-1.95 second
+Navigation retains modified-click/new-tab behavior and bounded 0.75-2.0 second
 outgoing transitions with a 450ms navigation watchdog if rendering stalls.
 Escape cancels a departure. Links work normally without JavaScript or WebGL.
 Cross-document View Transitions are not required (avoids browser opt-in errors).
