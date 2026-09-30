@@ -2,14 +2,17 @@ import * as THREE from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {t} from './site.js';
 import {shouldWelcome,readPreference,writePreference,clamp} from './motion-core.mjs';
-import {serviceLook,slidePoint,canAnimateLink,ease,glidePoint,wanderPoint,journeyDuration,readArrival} from './valid-core.mjs';
+import {serviceLook,slidePoint,canAnimateLink,ease,glidePoint,wanderPoint,journeyDuration,readArrival,nextTickle,escapePoint,processFrame,PROCESS_DURATION} from './valid-core.mjs';
 import {makeRobot} from './valid-robot.js';
 import {makeBodyDigits} from './valid-particles.js';
 import {makeProps,makeShadow} from './valid-props.js';
+import {paintEyes} from './valid-eyes.mjs';
+import {initProcess} from './valid-process.mjs';
 
 export async function initValid({canMove,isHidden}){
  const actor=document.querySelector('[data-valid]'),canvas=actor.querySelector('canvas'),bubble=actor.querySelector('.valid-bubble');
  const overlay=document.querySelector('[data-valid-welcome]'),skip=overlay.querySelector('button'),webFX=document.querySelector('[data-valid-web]');
+ const touch=document.querySelector('[data-valid-touch]'),status=document.querySelector('[data-valid-status]');
  const stages=[...document.querySelectorAll('[data-valid-stage]')],route=document.body.dataset.route,rtl=document.documentElement.dir==='rtl';
  const baseLook=serviceLook(route)||'natural';
  let storage;try{storage=sessionStorage;}catch{}
@@ -18,6 +21,7 @@ export async function initValid({canMove,isHidden}){
  let width=innerWidth,height=innerHeight,frame=0,last=0,clock=0,active=null,look=baseLook,action='',hover=null;
  let intro=null,introResolve,transit=null,arrival=null,travel=null,roam=null,disposed=false,robotBlend=baseLook==='robot'?1:0,digitBlend=baseLook==='binary'?1:0;
  let until=7,seed=Math.random()*1000,restUntil=0,landedAt=0,bubbleTimer,navTimer;
+ let tapCount=0,reaction=null,press=null;
  let point={x:width*.72,y:height*.72,z:0},pose={yaw:0,roll:0,height:160,air:0,sit:0},lastRender=0;
  const times=new WeakMap(),seen=new WeakSet();
  const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true,powerPreference:'low-power'});
@@ -30,6 +34,7 @@ export async function initValid({canMove,isHidden}){
  let mesh;character.traverse(n=>{if(n.isSkinnedMesh){mesh=n;n.frustumCulled=false;}});
  if(!mesh){renderer.dispose();throw Error('Missing character rig');}
  mesh.material=mesh.material.clone();mesh.material.transparent=true;mesh.material.depthWrite=true;
+ const eyes=paintEyes(mesh.material),process=initProcess(stages,{canMove,isHidden});
  const bones=Object.fromEntries(mesh.skeleton.bones.map(b=>[b.name,b])),mixer=new THREE.AnimationMixer(character);
  const actions=Object.fromEntries(gltf.animations.map(clip=>[clip.name,mixer.clipAction(clip)]));
  const baseline=mesh.skeleton.bones.map(bone=>({bone,q:bone.quaternion.clone(),p:bone.position.clone()}));
@@ -37,18 +42,19 @@ export async function initValid({canMove,isHidden}){
  const naturalHeight=()=>innerWidth<760?128:167;
  const unit=()=>2*Math.tan(THREE.MathUtils.degToRad(camera.fov/2))*camera.position.z/height;
  function project(px,py,z=0){const k=unit()*(1-z/camera.position.z);return new THREE.Vector3((px-width/2)*k,(height/2-py)*k,z);}
- function play(name){if(action===name)return;action=name;for(const [key,a] of Object.entries(actions)){if(key===name)a.reset().setEffectiveWeight(1).play().fadeIn(.22);else a.fadeOut(.22);}}
+ function play(name,speed=1){actions[name]?.setEffectiveTimeScale(speed);if(action===name)return;action=name;for(const [key,a] of Object.entries(actions)){if(key===name)a.reset().setEffectiveWeight(1).play().fadeIn(.22);else a.fadeOut(.22);}}
  function advancePose(dt){
   // Mixer caches constant tracks. Restore its last unmodified pose before adding
   // procedural sitting/flying/flexing so those offsets never accumulate or stick.
   for(const {bone,q,p} of baseline){bone.quaternion.copy(q);bone.position.copy(p);}
   mixer.update(dt);
   for(const saved of baseline){saved.q.copy(saved.bone.quaternion);saved.p.copy(saved.bone.position);}
+  eyes.setBlink(0);
  }
  function say(key){clearTimeout(bubbleTimer);bubble.textContent=t(key);bubble.classList.add('visible');bubbleTimer=setTimeout(()=>bubble.classList.remove('visible'),2400);}
  function eligible(){return !isHidden()&&!document.hidden&&document.querySelector('.menu-toggle')?.getAttribute('aria-expanded')!=='true';}
  function wake(){if(!frame&&!disposed)frame=requestAnimationFrame(tick);}
- function size(){width=innerWidth;height=innerHeight;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);until=clock+2;wake();}
+ function size(){width=innerWidth;height=innerHeight;camera.aspect=width/height;camera.updateProjectionMatrix();renderer.setSize(width,height,false);process.resize();until=clock+2;wake();}
  function stageRect(node){const r=node.getBoundingClientRect();return {left:r.left,top:r.top,width:r.width,height:r.height,bottom:r.bottom};}
  function safePoint(p){
   const h=naturalHeight(),bound=q=>({...q,x:clamp(q.x,h*.43,width-h*.43),y:clamp(q.y,Math.min(height*.55,h+100),height-28)}),start=bound(p);
@@ -64,12 +70,19 @@ export async function initValid({canMove,isHidden}){
   if(kind==='process'){const r=node.querySelector('[data-valid-step]').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top,z:0};}
   return wanderPoint(r,++seed);
  }
+ function stageVisible(node,r=stageRect(node)){
+  if(node.dataset.validStage==='process'){
+   const steps=[...node.querySelectorAll('[data-valid-step]')].map(n=>n.getBoundingClientRect());
+   return Math.max(...steps.map(s=>s.top))<height-30&&Math.min(...steps.map(s=>s.top))>Math.min(height*.4,naturalHeight()+100);
+  }
+  return r.bottom>150&&r.top<height-90;
+ }
  function chooseStage(){
-  const candidates=stages.map(node=>({node,r:stageRect(node)})).filter(({r})=>r.height&&r.bottom>120&&r.top<height-65);
+  const candidates=stages.map(node=>({node,r:stageRect(node)})).filter(({node,r})=>r.height&&r.bottom>120&&r.top<height-65&&(node.dataset.validStage!=='process'||stageVisible(node,r)));
   const target=candidates.sort((a,b)=>Math.abs(a.r.top+a.r.height*.7-height*.63)-Math.abs(b.r.top+b.r.height*.7-height*.63))[0]?.node;
   if(!target||target===active)return;
   if(active)delete active.dataset.validActive;
-  active=target;active.dataset.validActive='true';roam=null;
+  active=target;active.dataset.validActive='true';roam=null;hover=null;
   // Section changes only change the destination, never the character or position.
   const to=safePoint(stageTarget(target));travel={from:{...point},to,start:clock,duration:clamp(Math.hypot(to.x-point.x,to.y-point.y)/420,.85,1.65)};
   until=clock+7;
@@ -96,13 +109,52 @@ export async function initValid({canMove,isHidden}){
   // The skeleton and robot are children of this mesh: hiding the mesh would
   // also hide every mechanical component. Fade its material, not its subtree.
   mesh.visible=true;mesh.material.depthWrite=mesh.material.opacity>.95;
-  for(const [name,obj] of Object.entries(props))obj.visible=(name===look||name==='face'&&look!=='package')&&digitBlend<.1&&robotBlend<.1;
+  for(const [name,obj] of Object.entries(props))obj.visible=name===look&&digitBlend<.1&&robotBlend<.1;
   world.position.copy(project(point.x,point.y,point.z));world.scale.setScalar(unit()*pose.height/1.9);world.rotation.set(pose.air*.10,pose.yaw,pose.roll);
   world.updateMatrixWorld(true);digits.update({opacity:digitBlend*opacity,spread,time:clock,height,pixelRatio:renderer.getPixelRatio()});
   const s=pose.height*unit()*(1+pose.air*.1);shadow.position.copy(project(point.x,point.y+pose.air*45,-.05));shadow.scale.set(s*.78,s*.17,1);shadow.material.opacity=(1-pose.air*.7)*opacity;shadow.visible=!intro&&spread<.4&&point.y>0;
-  actor.dataset.look=look;actor.dataset.validState=intro?'welcome':transit?'departing':arrival?'arriving':travel?'following':pose.sit>.8?'sliding':roam?'wandering':'resting';
+  actor.dataset.look=look;actor.dataset.validState=intro?'welcome':transit?'departing':arrival?'arriving':reaction?(reaction.kind==='run'?'running':'giggling'):travel?'following':pose.sit>.8?'sliding':roam?'wandering':'resting';
   actor.dataset.characterX=String(Math.round(point.x));actor.dataset.characterY=String(Math.round(point.y));actor.dataset.characterHeight=String(Math.round(pose.height));
-  bubble.style.left=clamp(point.x,95,width-95)+'px';bubble.style.top=Math.max(80,point.y-pose.height-35)+'px';renderer.render(scene,camera);
+  bubble.style.left=clamp(point.x,95,width-95)+'px';bubble.style.top=Math.max(80,point.y-pose.height-35)+'px';updateTouch();renderer.render(scene,camera);
+ }
+ function updateTouch(){
+  touch.hidden=!eligible()||!canMove()||!!(intro||transit||arrival)||point.y<100||point.y-pose.height>height;
+  if(touch.hidden)return;
+  const h=pose.height/(1-point.z/18)*.88,w=Math.max(48,h*.64),left=point.x-w/2,top=point.y-h;
+  touch.style.left=left+'px';touch.style.top=top+'px';touch.style.width=w+'px';touch.style.height=h+'px';
+  // Keep real controls usable when the companion happens to cross them.
+  const blocked=[...document.querySelectorAll('a,button,input,select,textarea')].some(n=>{if(n===touch||n.closest('.valid-controls')||n.closest('[hidden]'))return false;const r=n.getBoundingClientRect();return r.width&&r.height&&r.left<left+w&&r.right>left&&r.top<top+h&&r.bottom>top;});
+  touch.style.pointerEvents=blocked?'none':'auto';
+ }
+ function cancelReaction(){reaction=null;eyes.setBlink(0);}
+ function tickle(event){
+  if(touch.hidden||!canMove()||!eligible()||intro||transit||arrival)return;
+  if(event.detail&&press&&(Math.hypot(event.clientX-press.x,event.clientY-press.y)>10||Math.abs(scrollY-press.scroll)>8)){press=null;return;}
+  const tap=event.detail?{x:event.clientX,y:event.clientY}:{x:point.x,y:point.y-pose.height*.55};press=null;
+  const next=nextTickle(tapCount);tapCount=next.count;actor.dataset.tickleCount=String(tapCount);
+  reaction={kind:next.reaction,start:clock,duration:next.reaction==='run'?1.25:.9,from:{...point},to:escapePoint(point,tap,{width,height,margin:naturalHeight()*.45}),yaw:pose.yaw,look};
+  roam=null;travel=null;pose.sit=0;pose.air=0;pose.roll=0;
+  const message=next.reaction==='run'?'Catch me if you can!':'Hehe! That tickles.';say(message);status.textContent=t(message);until=clock+3;wake();
+ }
+ function react(dt){
+  const r=reaction,u=clamp((clock-r.start)/r.duration,0,1),pulse=Math.sin(u*Math.PI),chuckle=Math.sin(u*Math.PI*10)*pulse;
+  look=r.look;pose.sit=0;pose.air=0;pose.height=THREE.MathUtils.damp(pose.height,naturalHeight(),8,dt);
+  play(r.kind==='run'?'walk':'idle',r.kind==='run'?2.25:1);advancePose(dt);poseBody('hello',0,0);
+  if(r.kind==='giggle'){
+   point={...r.from};pose.yaw=r.yaw*.65;pose.roll=chuckle*.035;
+   bones.Chest.rotation.x+=.08*pulse+chuckle*.035;bones.Head.rotation.z+=chuckle*.055;
+   bones.ArmL.rotation.z=-.42*pulse;bones.ArmR.rotation.z=.42*pulse;
+   bones.ForearmL.rotation.x=-.8*pulse;bones.ForearmR.rotation.x=-.8*pulse;
+   character.position.y=Math.abs(chuckle)*.014;eyes.setBlink(pulse*.85);
+  }else{
+   const direction=Math.sign(r.to.x-r.from.x);point=glidePoint(r.from,r.to,u,10,-direction*16);
+   pose.yaw=THREE.MathUtils.damp(pose.yaw,direction*1.03,10,dt);pose.roll=-direction*pulse*.12;bones.Chest.rotation.x+=.1*pulse;
+  }
+  render(dt);
+  if(u>=1){
+   const wasRun=r.kind==='run';cancelReaction();pose.roll=0;restUntil=clock+1;until=clock+2;
+   if(active&&['process','slide'].includes(active.dataset.validStage))travel={from:{...point},to:stageTargetStable(active,point),start:clock,duration:wasRun?1.1:.45};
+  }
  }
  function drawWeb(center,growth=1,opacity=1){
   webFX.removeAttribute('hidden');webFX.style.opacity=String(opacity);webFX.setAttribute('viewBox',`0 0 ${width} ${height}`);
@@ -116,7 +168,7 @@ export async function initValid({canMove,isHidden}){
  function welcome(force=false){
   const allowed=force?canMove()&&!isHidden():eligible()&&shouldWelcome({home:route==='',seen:readPreference(storage,'moosetvs_valid_welcome')==='yes',reduced:!canMove(),paused:isHidden(),scrollY});
   if(!allowed||route!=='')return Promise.resolve();
-  endIntro();writePreference(storage,'moosetvs_valid_welcome','yes');chooseStage();const landing=safePoint(active?stageTarget(active):{x:width*.65,y:height*.75,z:0});
+  endIntro();cancelReaction();writePreference(storage,'moosetvs_valid_welcome','yes');chooseStage();const landing=safePoint(active?stageTarget(active):{x:width*.65,y:height*.75,z:0});
   intro={start:clock,landing};travel=null;roam=null;overlay.hidden=false;actor.hidden=false;document.documentElement.dataset.validWelcoming='true';actor.classList.add('valid-intro');wake();return new Promise(resolve=>{introResolve=resolve;});
  }
  function introFrame(dt){
@@ -131,11 +183,11 @@ export async function initValid({canMove,isHidden}){
  function stageTargetStable(node,fallback){
   const r=stageRect(node),kind=node.dataset.validStage,time=times.get(node)||0;
   if(kind==='slide'){const s=node.querySelector('svg').getBoundingClientRect(),p=slidePoint(ease((time-.6)/3.5));return {x:s.left+p.x/600*s.width,y:s.top+p.y/240*s.height,z:0};}
-  if(kind==='process'&&time<5.2){const steps=[...node.querySelectorAll('[data-valid-step]')],r=steps[Math.min(4,Math.floor(Math.max(0,time-.35)/1.1))].getBoundingClientRect();return {x:r.left+r.width/2,y:r.top,z:0};}
+  if(kind==='process'&&time<PROCESS_DURATION){const steps=[...node.querySelectorAll('[data-valid-step]')],p=processFrame(time),a=steps[p.from].getBoundingClientRect(),b=steps[p.to].getBoundingClientRect();return glidePoint({x:a.left+a.width/2,y:a.top},{x:b.left+b.width/2,y:b.top},p.u,width<760?30:40);}
   return {...fallback,y:clamp(r.bottom-25,pose.height+100,height-28)};
  }
  function routine(dt){
-  chooseStage();const bounds=active&&stageRect(active),onStage=bounds&&bounds.bottom>150&&bounds.top<height-90,kind=onStage?active.dataset.validStage:'hello';let walking=false,air=0,sit=0;
+  chooseStage();const bounds=active&&stageRect(active),onStage=bounds&&stageVisible(active,bounds),kind=onStage?active.dataset.validStage:'hello';let walking=false,air=0,sit=0;
   look=hover?.look||(kind==='expertise'?'glasses':kind==='strong'?'strong':['robot','web','binary','package'].includes(kind)?kind:baseLook);
   if(travel){
    const u=clamp((clock-travel.start)/travel.duration,0,1),target=active?safePoint(stageTargetStable(active,travel.to)):travel.to;
@@ -146,8 +198,8 @@ export async function initValid({canMove,isHidden}){
    const time=(times.get(active)||0)+dt;if(active&&onStage)times.set(active,time);
    if(kind==='slide'){
     const r=active.querySelector('svg').getBoundingClientRect(),u=ease((time-.6)/3.5),p=slidePoint(u),next=slidePoint(Math.min(1,u+.01));sit=ease(time/.5)*(1-ease((time-4.4)/.7));point={x:r.left+p.x/600*r.width,y:r.top+p.y/240*r.height,z:0};pose.yaw=THREE.MathUtils.damp(pose.yaw,-.85,8,dt);pose.roll=THREE.MathUtils.damp(pose.roll,time<4.1?Math.atan2(next.y-p.y,Math.abs(next.x-p.x))*.2:0,7,dt);actor.dataset.slidePhase=u<.3?'top':u<.8?'middle':'bottom';
-   }else if(kind==='process'&&time<5.2){
-    const platforms=[...active.querySelectorAll('[data-valid-step]')].map(n=>n.getBoundingClientRect()),phase=clamp((time-.35)/1.1,0,4),i=Math.min(3,Math.floor(phase)),u=phase>=4?1:phase-i,a=platforms[i],b=platforms[i+1];point=glidePoint({x:a.left+a.width/2,y:a.top},{x:b.left+b.width/2,y:b.top},u,56);air=Math.sin(u*Math.PI);pose.yaw=rtl?-.6:.6;
+   }else if(kind==='process'&&time<PROCESS_DURATION){
+    const platforms=[...active.querySelectorAll('[data-valid-step]')].map(n=>n.getBoundingClientRect()),p=processFrame(time),a=platforms[p.from],b=platforms[p.to];point=glidePoint({x:a.left+a.width/2,y:a.top},{x:b.left+b.width/2,y:b.top},p.u,width<760?30:40);air=Math.sin(p.u*Math.PI);pose.yaw=rtl?-.6:.6;pose.roll=0;process.reveal(active,p.landed);
    }else if(kind==='strong'&&time<3.5){pose.yaw=THREE.MathUtils.damp(pose.yaw,0,7,dt);pose.roll=0;}
    else if(clock<until&&clock>restUntil){
     if(!roam){const rect=active?stageRect(active):{left:width*.15,top:height*.52,width:width*.7,height:height*.35};roam={from:{...point},to:safePoint(wanderPoint(rect,++seed)),start:clock,duration:2.6+Math.random()*.7,scroll:scrollY};}
@@ -180,22 +232,24 @@ export async function initValid({canMove,isHidden}){
   frame=0;if(disposed||document.hidden)return;
   if(now-lastRender<1000/40){wake();return;}
   const dt=last?Math.min((now-last)/1000,.08):.016;last=now;lastRender=now;
-  if(!eligible()){actor.hidden=true;return;}actor.hidden=false;
-  if(!canMove()){endIntro();cancelTransit();arrival=null;travel=null;roam=null;hideWeb();look=baseLook;digitBlend=0;robotBlend=baseLook==='robot'?1:0;pose.height=naturalHeight();pose.air=0;pose.sit=0;pose.roll=0;chooseStage();if(active)point=safePoint(stageTarget(active));play('idle');advancePose(.001);poseBody('hello',0,0);render(.1);cancelAnimationFrame(frame);frame=0;return;}
+  if(!eligible()){actor.hidden=true;touch.hidden=true;return;}actor.hidden=false;
+  if(!canMove()){endIntro();cancelTransit();cancelReaction();process.sync();arrival=null;travel=null;roam=null;hideWeb();look=baseLook;digitBlend=0;robotBlend=baseLook==='robot'?1:0;pose.height=naturalHeight();pose.air=0;pose.sit=0;pose.roll=0;chooseStage();if(active)point=safePoint(stageTarget(active));play('idle');advancePose(.001);poseBody('hello',0,0);render(.1);cancelAnimationFrame(frame);frame=0;return;}
   clock+=dt;
-  if(intro)introFrame(dt);else if(transit)depart(dt);else if(arrival)arrive(dt);else routine(dt);
-  const time=times.get(active)||0,kind=active?.dataset.validStage,r=active&&stageRect(active),visible=r&&r.bottom>150&&r.top<height-90;if(intro||transit||arrival||travel||roam||clock<until||visible&&(kind==='slide'||kind==='process')&&time<5.8)wake();else last=0;
+  if(intro)introFrame(dt);else if(transit)depart(dt);else if(arrival)arrive(dt);else if(reaction)react(dt);else routine(dt);
+  const time=times.get(active)||0,kind=active?.dataset.validStage,visible=active&&stageVisible(active);if(intro||transit||arrival||reaction||travel||roam||clock<until||visible&&(kind==='slide'||kind==='process')&&time<5.8)wake();else last=0;
  }
- function sync(){if(!canMove()||isHidden()){endIntro();cancelTransit();}actor.hidden=!eligible();document.documentElement.dataset.validVisible=String(eligible());last=0;wake();}
+ function sync(){if(!canMove()||isHidden()){endIntro();cancelTransit();cancelReaction();}process.sync();actor.hidden=!eligible();touch.hidden=!eligible()||!canMove();document.documentElement.dataset.validVisible=String(eligible());last=0;wake();}
  function onScroll(){
-  if(intro)endIntro();if(transit||arrival)return;
+  hover=null;cancelReaction();if(intro)endIntro();if(transit||arrival)return;
   // Retarget the current flight; do not restart its clock on every wheel event.
   until=clock+5;roam=null;chooseStage();
   if(!travel){const target=active?safePoint(stageTarget(active)):safePoint({...point,y:height*.69});travel={from:{...point},to:target,start:clock,duration:1.05};}wake();
  }
  window.addEventListener('scroll',onScroll,{passive:true});window.addEventListener('resize',()=>{size();if(intro)intro.landing=safePoint(active?stageTarget(active):point);},{passive:true});
- document.addEventListener('visibilitychange',()=>{last=0;if(!document.hidden)wake();});skip.addEventListener('click',()=>{endIntro();document.querySelector('.hero .button')?.focus({preventScroll:true});});
- document.addEventListener('keydown',event=>{if(event.key==='Tab')endIntro();if(event.key==='Escape'){endIntro();cancelTransit();}});document.querySelectorAll('.site-header a,.skip').forEach(a=>a.addEventListener('click',endIntro));
+ touch.addEventListener('pointerdown',event=>{press={x:event.clientX,y:event.clientY,scroll:scrollY};},{passive:true});
+ touch.addEventListener('pointercancel',()=>{press=null;});touch.addEventListener('click',tickle);
+ document.addEventListener('visibilitychange',()=>{last=0;if(document.hidden)touch.hidden=true;else wake();});skip.addEventListener('click',()=>{endIntro();document.querySelector('.hero .button')?.focus({preventScroll:true});});
+ document.addEventListener('keydown',event=>{if(event.key==='Tab')endIntro();if(event.key==='Escape'){endIntro();cancelTransit();cancelReaction();}});document.querySelectorAll('.site-header a,.skip').forEach(a=>a.addEventListener('click',endIntro));
  const menu=document.querySelector('.menu-toggle');if(menu)new MutationObserver(sync).observe(menu,{attributes:true,attributeFilter:['aria-expanded']});
  const prefetched=new Set();
  for(const card of document.querySelectorAll('.service-card')){
@@ -206,12 +260,12 @@ export async function initValid({canMove,isHidden}){
  document.addEventListener('click',event=>{
   const link=event.target.closest('a[href]');if(!canAnimateLink(event,link,location.origin)||!canMove()||!eligible()||intro||actor.hidden)return;
   const next=serviceLook(link.pathname)||(link.pathname.replace(/\/$/,'').endsWith('/pricing')?'natural':null);if(!next||link.pathname===location.pathname)return;
-  event.preventDefault();cancelTransit();arrival=null;roam=null;travel=null;transit={url:link.href,target:link,look:next,start:clock,duration:journeyDuration[next]/1000,from:{...point}};
+  event.preventDefault();cancelTransit();cancelReaction();arrival=null;roam=null;travel=null;transit={url:link.href,target:link,look:next,start:clock,duration:journeyDuration[next]/1000,from:{...point}};
   // A real navigation cannot be held hostage by a stalled render loop.
   navTimer=setTimeout(navigate,journeyDuration[next]+450);wake();
  });
- canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();disposed=true;cancelAnimationFrame(frame);endIntro();if(transit)navigate();actor.hidden=true;hideWeb();document.documentElement.dataset.validSupport='unavailable';});
- window.addEventListener('pagehide',()=>{clearTimeout(navTimer);cancelAnimationFrame(frame);frame=0;});window.addEventListener('pageshow',event=>{if(event.persisted){cancelTransit();endIntro();arrival=null;last=0;wake();}});
+ canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();disposed=true;cancelAnimationFrame(frame);endIntro();if(transit)navigate();actor.hidden=true;touch.hidden=true;process.finishAll();hideWeb();document.documentElement.dataset.validSupport='unavailable';});
+ window.addEventListener('pagehide',()=>{clearTimeout(navTimer);cancelAnimationFrame(frame);frame=0;});window.addEventListener('pageshow',event=>{if(event.persisted){cancelTransit();cancelReaction();endIntro();arrival=null;last=0;wake();}});
  new ResizeObserver(()=>{until=clock+1;wake();}).observe(document.querySelector('main'));
  play('idle');advancePose(.001);size();chooseStage();if(active)point=safePoint(stageTarget(active));travel=null;pose.height=naturalHeight();
  if(canMove()&&(handoff||baseLook==='binary')){arrival={look:handoff?.look||baseLook,start:clock,duration:handoff?.look==='web'?1.4:1.8,from:{x:rtl?-120:width+120,y:-130,z:0},to:{...point}};document.documentElement.dataset.validArrival='true';}

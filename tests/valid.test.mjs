@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {serviceLook,slidePoint,canAnimateLink,glidePoint,wanderPoint,readArrival,journeyDuration} from '../src/browser/valid-core.mjs';
+import {serviceLook,slidePoint,canAnimateLink,glidePoint,wanderPoint,readArrival,journeyDuration,nextTickle,escapePoint,processFrame,PROCESS_DURATION} from '../src/browser/valid-core.mjs';
 import * as THREE from 'three';
 import {makeRobot} from '../src/browser/valid-robot.js';
+import {paintEyes} from '../src/browser/valid-eyes.mjs';
+import {initProcess} from '../src/browser/valid-process.mjs';
 import {plans} from '../src/redesign/data.mjs';
 
 test('all languages map to the same four Valid transformations',()=>{
@@ -65,4 +67,45 @@ test('home has in-content stages and pricing has lower clear USD starting prices
  assert(home.includes('M50 205C220 205 410 35 550 35'));assert(home.includes('data-valid-web'));assert(!home.includes('valid-binary'));
  const js=await readFile('src/browser/valid.js','utf8');assert(js.includes('document.hidden'));assert(js.includes('webglcontextlost'));assert(js.includes('location.assign(url)'));assert(js.includes('setTimeout(navigate,journeyDuration[next]+450)'));assert(js.includes('PerspectiveCamera'));
  const particles=await readFile('src/browser/valid-particles.js','utf8');assert(particles.includes('mesh.getVertexPosition'));assert(particles.includes('mesh.skeleton.update()'));
+});
+test('every fifth tickle escapes and the next click begins a fresh cycle',()=>{
+ let count=0;for(let i=1;i<=20;i++){const next=nextTickle(count);assert.equal(next.reaction,i%5===0?'run':'giggle');assert.equal(next.count,i%5);count=next.count;}
+ for(const bad of [-1,NaN,undefined,9,1.5])assert.deepEqual(nextTickle(bad),{count:1,reaction:'giggle'});
+});
+test('escape goes away from the tap and stays inside desktop and mobile viewports',()=>{
+ assert(escapePoint({x:500,y:450},{x:470,y:400},{width:1200,height:800}).x>500);
+ assert(escapePoint({x:500,y:450},{x:530,y:400},{width:1200,height:800}).x<500);
+ for(const width of [320,390,768,1440])for(const x of [50,width/2,width-50]){
+  const p=escapePoint({x,y:550},{x,y:500},{width,height:650});assert(p.x>=65&&p.x<=width-65);assert(p.y>=180&&p.y<=615);assert(Math.abs(p.x-x)>70);assert(p.z<0);
+ }
+});
+test('process names reveal at landing, with a pause before each next jump',()=>{
+ assert.equal(processFrame(0).landed,0);assert.equal(processFrame(.5).u,0);
+ for(let hop=0;hop<4;hop++){
+  const start=.5+hop*1.1;assert.equal(processFrame(start+.4).landed,hop);
+  assert.equal(processFrame(start+.761).landed,hop+1);assert.equal(processFrame(start+1).u,1);
+ }
+ assert.equal(processFrame(PROCESS_DURATION).landed,4);assert(processFrame(PROCESS_DURATION).done);
+});
+test('process progress stays revealed and all content is restored when motion is off',()=>{
+ const steps=Array.from({length:5},()=>({dataset:{},getBoundingClientRect:()=>({left:0,top:200,width:100})}));
+ const details=Array.from({length:5},()=>({dataset:{}})),paths=Array.from({length:4},()=>({dataset:{},setAttribute(){}}));
+ const svg={children:paths,setAttribute(){}},section={dataset:{},querySelectorAll:()=>details};
+ const stage={dataset:{validStage:'process'},closest:()=>section,querySelectorAll:s=>s==='[data-valid-step]'?steps:paths,querySelector:()=>svg,getBoundingClientRect:()=>({left:0,top:100,width:600,height:300,bottom:400})};
+ let moving=true;const process=initProcess([stage],{canMove:()=>moving,isHidden:()=>false});
+ assert.equal(section.dataset.processAnimated,'true');process.reveal(stage,0);assert.equal(steps.filter(s=>s.dataset.landed).length,1);assert.equal(paths.filter(p=>p.dataset.connected).length,0);
+ process.reveal(stage,2);process.reveal(stage,1);assert.equal(section.dataset.processProgress,'3');assert.equal(paths.filter(p=>p.dataset.connected).length,2);
+ moving=false;process.sync();assert.equal(section.dataset.processAnimated,undefined);assert.equal(details.filter(d=>d.dataset.revealed).length,5);assert.equal(paths.filter(p=>p.dataset.connected).length,4);
+});
+test('eyes are shaded on the existing skinned face, with clamped eyelid control',()=>{
+ const material=new THREE.MeshStandardMaterial(),eyes=paintEyes(material),shader={vertexShader:THREE.ShaderLib.standard.vertexShader,fragmentShader:THREE.ShaderLib.standard.fragmentShader,uniforms:{}};
+ material.onBeforeCompile(shader);assert(shader.vertexShader.includes('validRest=position'));assert(shader.fragmentShader.includes('eyeMask'));assert(shader.fragmentShader.includes('diffuseColor.rgb=mix'));
+ assert(shader.fragmentShader.indexOf('float eyeMask')<shader.fragmentShader.indexOf('roughnessFactor=mix'));
+ eyes.setBlink(2);assert.equal(shader.uniforms.validBlink.value,1);eyes.setBlink(-1);assert.equal(shader.uniforms.validBlink.value,0);
+});
+test('localized process enhancement preserves readable semantic fallback and tap control',async()=>{
+ for(const lang of ['','he/','ar/']){
+  const page=await readFile(`dist/${lang}index.html`,'utf8');assert.equal((page.match(/data-process-detail=/g)||[]).length,5);assert.equal((page.match(/class="valid-step-name"/g)||[]).length,5);assert(page.includes('data-process-links'));assert(page.includes('data-valid-touch hidden aria-label='));assert(page.includes('data-valid-status role="status"'));assert(!page.includes('data-process-animated="true"'));
+ }
+ const props=await readFile('src/browser/valid-props.js','utf8');assert(!props.includes('props.face'));assert(!props.includes('const face='));
 });

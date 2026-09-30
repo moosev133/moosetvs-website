@@ -10,3 +10,16 @@ export function readArrival(raw,path,now){try{const value=JSON.parse(raw);return
 // Deterministic per seed: varied curves without sudden per-frame random jitter.
 export function wanderPoint(rect,seed){const noise=n=>{const v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);};return {x:rect.left+rect.width*(.19+.62*noise(seed)),y:rect.top+rect.height*(.69+.25*noise(seed+4)),z:-1.2+2*noise(seed+9)};}
 export function canAnimateLink(event,link,origin){return !!link&&!event.defaultPrevented&&event.button===0&&!event.metaKey&&!event.ctrlKey&&!event.shiftKey&&!event.altKey&&!link.hasAttribute('download')&&(!link.target||link.target==='_self')&&new URL(link.href).origin===origin;}
+
+export function nextTickle(count){const next=(Number.isInteger(count)&&count>=0&&count<5?count:0)+1;return next===5?{count:0,reaction:'run'}:{count:next,reaction:'giggle'};}
+export function escapePoint(point,tap,{width,height,margin=65}){
+ const available=point.x<width/2?1:-1,dx=point.x-tap.x,direction=Math.abs(dx)>12?Math.sign(dx):available;
+ let x=Math.max(margin,Math.min(width-margin,point.x+direction*Math.min(300,width*.55)));
+ if(Math.abs(x-point.x)<80)x=Math.max(margin,Math.min(width-margin,point.x-direction*Math.min(300,width*.55)));
+ return {x,y:Math.max(180,Math.min(height-35,point.y+(tap.y<point.y-50?25:-35))),z:-.6};
+}
+export const PROCESS_DURATION=5.2;
+export function processFrame(time){
+ const elapsed=Math.max(0,time-.5),index=Math.min(3,Math.floor(elapsed/1.1)),u=clamp01((elapsed-index*1.1)/.76);
+ return {from:index,to:index+1,u,landed:time<.5?0:index+(u>=1?1:0),done:time>=PROCESS_DURATION};
+}
