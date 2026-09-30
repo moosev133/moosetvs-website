@@ -6,7 +6,7 @@ function initMotion(){
  const root=document.documentElement,media=matchMedia('(prefers-reduced-motion: reduce)');
  let storage;try{storage=localStorage;}catch{}
  let paused=readPreference(storage,'moosetvs_motion')==='off',hidden=readPreference(storage,'moosetvs_pet')==='hidden';
- let companion,typingToken=0,chartFrame=0,heroStarted=false;const boot=performance.now();
+ let companion,typingToken=0,chartFrame=0,heroStarted=false;
  const canMove=()=>!paused&&!media.matches;
  const motionButton=document.querySelector('[data-motion-toggle]'),petButton=document.querySelector('[data-pet-toggle]'),replay=document.querySelector('[data-intro-replay]');
  document.querySelector('[data-motion-tools]').hidden=false;
@@ -48,8 +48,9 @@ function initMotion(){
   root.dataset.validSupport='ready';sync();
   replay.hidden=document.body.dataset.route!=='';
   replay.addEventListener('click',async()=>{finishHero();window.scrollTo({top:0,behavior:'instant'});await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));await companion.welcome(true);hero(true);});
-  if(performance.now()-boot<1800)await companion.welcome();hero();
+  await companion.welcome();hero();
  }).catch(()=>{root.dataset.validSupport='unavailable';petButton.hidden=true;document.querySelector('[data-valid]').hidden=true;document.querySelector('[data-valid-welcome]').hidden=true;hero();});
- setTimeout(()=>{if(root.dataset.validSupport==='loading')hero();},1800);
+ // The complete headline remains visible while the optional model downloads.
+ // Do not race a slow download against the welcome and accidentally skip it.
 }
 try{initMotion();}catch{document.querySelector('[data-valid-welcome]')?.setAttribute('hidden','');}
