@@ -21,8 +21,8 @@ test('unavailable browser storage is non-fatal',()=>{
  const blocked={getItem(){throw Error('blocked')},setItem(){throw Error('blocked')}};
  assert.equal(readPreference(blocked,'key','fallback'),'fallback');assert.doesNotThrow(()=>writePreference(blocked,'key','yes'));
 });
-test('homepage has accessible final text, four distinct scenes, and unique featured concepts',async()=>{
- const featured=projects.filter(p=>p.featured);assert.equal(featured.length,3);assert.deepEqual(featured.map(p=>p.visual),['spaces','voice','fulfilment']);
+test('homepage has accessible final text, four distinct scenes, and four real featured projects',async()=>{
+ const featured=projects.filter(p=>p.featured);assert.equal(featured.length,4);assert.deepEqual(featured.map(p=>p.visual),['engine','aurum','reemove','solar']);
  assert(!featured.some(p=>['dashboard','automation','restaurant'].includes(p.visual)));
  for(const lang of ['en','he','ar']){
   const html=await readFile(`dist${href('',lang)}index.html`,'utf8');

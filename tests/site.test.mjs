@@ -13,14 +13,15 @@ async function walk(dir){const all=[];for(const e of await readdir(dir,{withFile
 const files=(await walk(root)).filter(p=>extname(p)==='.html'&&!p.includes('/downloads/'));
 test('all routes have semantic, localized HTML and intact local references',async()=>{
  const titles=new Set();let refs=0;
- assert.equal(files.length,141);
+ assert.equal(files.length,153);
  for(const file of files){
   const html=await readFile(file,'utf8');const lang=html.match(/<html lang="(\w+)"/)?.[1];assert(['en','he','ar'].includes(lang));
   assert(html.includes(`dir="${lang==='en'?'ltr':'rtl'}"`));assert.equal((html.match(/<h1\b/g)||[]).length,1,file);
   const title=html.match(/<title>(.*?)<\/title>/)?.[1];assert(title);assert(!title.includes('&amp;amp;'),file);
   if(!file.includes('/digital-products/index.html')||file.includes('/services/')){assert(!titles.has(`${lang}:${title}`),`Duplicate title: ${file}`);titles.add(`${lang}:${title}`);}
   assert(html.includes('name="description" content="'));assert(html.includes('property="og:title"'));assert(html.includes('hreflang="x-default"'));assert(html.includes('https://schema.org/Organization'));
-  const visible=html.replace(/<script[\s\S]*?<\/script>/g,'');assert(!/MT5|scalping|trading|signals|signupModal|signinModal/i.test(visible));
+  // MT5/Aurum are now legitimate portfolio entries, not the old trading storefront.
+  const visible=html.replace(/<script[\s\S]*?<\/script>/g,'');assert(!/signupModal|signinModal|guaranteed profits|buy trading signals/i.test(visible));
   const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(new Set(ids).size,ids.length,`Duplicate IDs: ${file}`);
   for(const match of html.matchAll(/(?:href|src|action)="([^"]+)"/g)){
    const url=match[1].replaceAll('&amp;','&');if(/^(https?:|mailto:|data:)/.test(url))continue;
@@ -50,6 +51,28 @@ test('all localized forms keep Netlify names, required fields and localized dest
 });
 test('project schema generates detail pages and valid demo links',async()=>{
  const slugs=new Set();for(const p of projects){assert(!slugs.has(p.slug));slugs.add(p.slug);for(const key of ['title','slug','category','shortDescription','fullDescription','technologies','screenshots','status','demoUrl','githubUrl','featured','year'])assert(Object.hasOwn(p,key),key);if(p.demoUrl)assert(p.demoUrl.startsWith('/demos/'));if(p.githubUrl)assert(new URL(p.githubUrl).protocol==='https:');for(const lang of ['en','he','ar'])await stat(`dist${href('work/'+p.slug,lang)}index.html`);}
+});
+test('real work is featured with genuine image assets and honest project context in every language',async()=>{
+ const real=projects.filter(p=>p.kind==='real');
+ assert.deepEqual(real.map(p=>p.title),['Moose Engine','Aurum','ReeMove','Saleh Solar System']);
+ assert.deepEqual(projects.filter(p=>p.featured),real);
+ for(const p of real){
+  assert(p.screenshots.length>0);assert.equal(p.highlights.length,3);assert(p.note);
+  if(p.liveUrl)assert.equal(new URL(p.liveUrl).protocol,'https:');
+  for(const s of p.screenshots){assert(s.src.startsWith('/images/work/'));assert(s.alt&&s.caption);assert((await stat('dist'+s.src)).size>1000);}
+  for(const lang of ['en','he','ar']){
+   const ctx=context(lang),html=(await readFile(`dist${href('work/'+p.slug,lang)}index.html`,'utf8')).replace(/<script[\s\S]*?<\/script>/g,'');
+   assert(html.includes('class="project-gallery"'));assert(html.includes(ctx.t(p.note)));
+   assert(!html.includes(ctx.t('Placeholder portfolio entry. This is not a paid client case study.')));
+   assert(html.includes(href('quote',lang)));
+   for(const s of p.screenshots)assert(html.includes(`src="${s.src}"`));
+   const home=await readFile(`dist${href('',lang)}index.html`,'utf8');assert(home.includes(href('work/'+p.slug,lang)));
+  }
+ }
+ const work=(await readFile('dist/work/index.html','utf8')).replace(/<script[\s\S]*?<\/script>/g,'');
+ assert(work.indexOf('work/saleh-solar-system')<work.indexOf('The ideas lab'));
+ assert(!work.includes('Real client work will be added here.'));
+ assert.equal(real.find(p=>p.slug==='moose-engine').screenshots[0].src,'/images/work/moose-engine.svg');
 });
 test('account pages have no indexed or embedded private user data',async()=>{
  const sitemap=await readFile('dist/sitemap.xml','utf8');for(const route of ['account','sign-in','sign-up','forgot-password','reset-password','thank-you']){

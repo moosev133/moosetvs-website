@@ -26,7 +26,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&toggle?.getAttribut
 nav?.addEventListener('click',e=>{if(e.target.closest('a')&&toggle.getAttribute('aria-expanded')==='true')toggle.click();});
 document.querySelectorAll('[data-filter]').forEach(button=>button.addEventListener('click',()=>{
  document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));
- document.querySelectorAll('[data-project-category]').forEach(card=>card.hidden=button.dataset.filter!=='All'&&card.dataset.projectCategory!==button.dataset.filter);
+ const scope=button.closest('.work-toolbar')?.parentElement||document;
+ scope.querySelectorAll('[data-project-category]').forEach(card=>card.hidden=button.dataset.filter!=='All'&&card.dataset.projectCategory!==button.dataset.filter);
 }));
 let attribution={};const params=new URLSearchParams(location.search);
 try{const saved=JSON.parse(sessionStorage.getItem('moosetvs_campaign')||'{}');if(saved&&typeof saved==='object'&&!Array.isArray(saved))attribution=saved;}catch{}

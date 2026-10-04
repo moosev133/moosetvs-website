@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" fill="none">
+ <title>Moose Engine — MQL5 / MetaTrader 5</title>
+ <desc>Original technical project illustration. Not a trading interface, price chart, or performance result.</desc>
+ <defs>
+  <linearGradient id="bg" x2="1200" y2="800" gradientUnits="userSpaceOnUse"><stop stop-color="#152f36"/><stop offset="1" stop-color="#08191f"/></linearGradient>
+  <linearGradient id="chip" x2="1" y2="1"><stop stop-color="#335761"/><stop offset="1" stop-color="#122d35"/></linearGradient>
+  <linearGradient id="gold"><stop stop-color="#f6df9e"/><stop offset="1" stop-color="#b58f4d"/></linearGradient>
+  <radialGradient id="light"><stop stop-color="#63abb1" stop-opacity=".22"/><stop offset="1" stop-color="#63abb1" stop-opacity="0"/></radialGradient>
+  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" stroke="#95bcc0" stroke-opacity=".07"/></pattern>
+  <filter id="shadow" x="-.5" y="-.5" width="2" height="2"><feDropShadow dy="20" stdDeviation="18" flood-color="#000" flood-opacity=".4"/></filter>
+ </defs>
+ <path fill="url(#bg)" d="M0 0h1200v800H0z"/><path fill="url(#grid)" d="M0 0h1200v800H0z"/>
+ <ellipse cx="600" cy="420" rx="490" ry="340" fill="url(#light)"/>
+ <g font-family="Arial, sans-serif">
+  <text x="68" y="91" fill="#a4bec1" font-size="16" letter-spacing="4">SPECIALIST AUTOMATION / 01</text>
+  <text x="68" y="167" fill="#f4f1e7" font-size="54" letter-spacing="-2">Moose Engine<tspan fill="#d7bb78">.</tspan></text>
+  <text x="68" y="205" fill="#9fb6ba" font-size="20">MQL5 development. MetaTrader 5.</text>
+  <g stroke="#78989e" stroke-opacity=".35" stroke-width="2">
+   <path d="M262 411H377L434 370H486M262 451H400L439 490H486M714 370H775L821 407H942M714 490H791L839 451H942"/>
+   <path d="M600 292V257H918M570 555V615H306M634 555V663H950M543 296V266H392"/>
+  </g>
+  <g stroke="url(#gold)" stroke-width="3"><path d="M263 430H383L428 450H476"/><path d="M724 420H807L851 430H941"/></g>
+  <g fill="#d7bb78"><circle cx="349" cy="430" r="5"/><circle cx="889" cy="430" r="5"/><circle cx="918" cy="257" r="4"/><circle cx="306" cy="615" r="4"/><circle cx="950" cy="663" r="4"/></g>
+  <g filter="url(#shadow)">
+   <rect x="450" y="283" width="300" height="298" rx="36" fill="#0b2027" stroke="#58757b"/>
+   <rect x="467" y="299" width="266" height="266" rx="25" fill="url(#chip)" stroke="#8a9e99"/>
+   <rect x="488" y="320" width="224" height="224" rx="15" fill="#132f37" stroke="#6b827e"/>
+   <g stroke="#d8bf84" stroke-width="8" stroke-linecap="round"><path d="M535 421l-22 16 22 16M665 421l22 16-22 16M613 397l-26 79"/></g>
+   <text x="600" y="371" fill="#b4c9c8" font-size="12" letter-spacing="3" text-anchor="middle">EXPERT ADVISOR</text>
+   <text x="600" y="514" fill="#e9e6d9" font-size="16" letter-spacing="4" text-anchor="middle">ENGINE</text>
+  </g>
+  <g>
+   <rect x="84" y="363" width="186" height="139" rx="15" fill="#17313a" stroke="#52777d"/>
+   <text x="177" y="421" text-anchor="middle" fill="#eddfba" font-size="31">MQL5</text>
+   <text x="177" y="459" text-anchor="middle" fill="#a2b9bb" font-size="14" letter-spacing="2">DEVELOPMENT</text>
+   <rect x="932" y="363" width="184" height="139" rx="15" fill="#17313a" stroke="#52777d"/>
+   <text x="1024" y="421" text-anchor="middle" fill="#eddfba" font-size="31">MT5</text>
+   <text x="1024" y="459" text-anchor="middle" fill="#a2b9bb" font-size="14" letter-spacing="2">PLATFORM</text>
+  </g>
+  <path d="M68 710H1132" stroke="#66848a" stroke-opacity=".35"/>
+  <text x="68" y="750" fill="#94aeb1" font-size="14" letter-spacing="2">CUSTOM SOFTWARE / MOOSETVS</text>
+  <text x="1132" y="750" text-anchor="end" fill="#94aeb1" font-size="13">PROJECT ILLUSTRATION</text>
+ </g>
+</svg>

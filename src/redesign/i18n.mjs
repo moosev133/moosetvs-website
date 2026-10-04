@@ -2,7 +2,8 @@ import en from '../locales/en.json' with {type:'json'};
 import he from '../locales/he.json' with {type:'json'};
 import ar from '../locales/ar.json' with {type:'json'};
 import {esc} from './layout.mjs';
-export const catalogs={en,he,ar};
+import {portfolioMessages} from './portfolio-copy.mjs';
+export const catalogs={en:{...en,...portfolioMessages.en},he:{...he,...portfolioMessages.he},ar:{...ar,...portfolioMessages.ar}};
 export const usedMessages=new Set();
 export function context(lang){
  if(!catalogs[lang])throw new Error(`Unknown locale ${lang}`);
