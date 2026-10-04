@@ -1,10 +1,8 @@
 import {esc,href,icon,link,heading,pageHero,cta} from './layout.mjs';
+import {animatedProjectMedia} from './project-scenes.mjs';
 
 export function projectMedia(ctx,p){
- const t=ctx.t, first=p.screenshots[0];
- if(p.visual==='reemove')return `<div class="work-cover cover-reemove" dir="ltr"><div class="cover-wordmark"><span>ReeMove</span><small>${t('Move together. Grow stronger.')}</small></div><div class="phone-pair">${p.screenshots.slice(1).map((s,i)=>`<div class="portfolio-phone phone-${i}"><img src="${esc(s.src)}" alt="${t(s.alt)}" width="390" height="844" loading="lazy"></div>`).join('')}</div><span class="cover-caption">FLUTTER / FIREBASE</span></div>`;
- if(p.visual==='engine')return `<div class="work-cover cover-engine"><img src="${esc(first.src)}" alt="${t(first.alt)}" width="1200" height="800" loading="lazy"><span class="cover-disclosure">${t('Project illustration')}</span></div>`;
- return `<div class="work-cover cover-${esc(p.visual)}" dir="ltr"><div class="cover-wordmark"><span>${esc(p.title)}</span><small>${t(p.visual==='solar'?'An experience, not just a website.':'Research, thoughtfully connected.')}</small></div><div class="portfolio-browser"><div class="portfolio-browser-bar" aria-hidden="true"><i></i><i></i><i></i><span>${p.visual==='solar'?'SALEH SOLAR SYSTEM':'AURUM / AGENT ROOM'}</span></div><img src="${esc(first.src)}" alt="${t(first.alt)}" width="1265" height="712" loading="lazy"></div></div>`;
+ return animatedProjectMedia(ctx,p);
 }
 
 export function realProjectPage(ctx,p){

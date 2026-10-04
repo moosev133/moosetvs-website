@@ -10,7 +10,7 @@ import {validCompanion as motionCompanion} from '../src/redesign/valid.mjs';
 // Replace only the generated output. Source and Git history are preserved.
 const out=resolve('dist');
 await rm(out,{recursive:true,force:true});await mkdir(out,{recursive:true});
-for(const asset of ['style.css','pages.css','typography.css','premium.css','motion.css','valid.css','valid','favicon.svg','site.webmanifest','downloads'])await cp(`public/${asset}`,`dist/${asset}`,{recursive:true});
+for(const asset of ['style.css','pages.css','typography.css','premium.css','motion.css','project-showcase.css','valid.css','valid','favicon.svg','site.webmanifest','downloads'])await cp(`public/${asset}`,`dist/${asset}`,{recursive:true});
 try{await cp('public/images','dist/images',{recursive:true});}catch(e){if(e.code!=='ENOENT')throw e;}
 const {url,key}=authConfig();
 const origin=process.env.CONTEXT&&process.env.CONTEXT!=='production'?process.env.DEPLOY_PRIME_URL:null;

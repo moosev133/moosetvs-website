@@ -32,6 +32,27 @@ The total image payload is under 500 KB. Full-size images open from the gallerie
 
 ## Maintenance
 
+### Animated feature reel
+
+The approved pre-animation version is preserved in
+`../MooseTVs-backups/moosetvs-before-animated-showcase-29428b8.zip` and commit `29428b8`.
+The homepage now uses a single rotating, eight-second project banner, followed by
+the all-projects link. `/work/` retains the complete portfolio and project filters.
+`project-scenes.mjs` supplies lightweight SVG/CSS motion covers to the banner,
+portfolio, and detail pages. Original full-size screenshots remain in the galleries.
+
+The trading candles, data flow, robot, research network and solar energy are
+illustrative motion design, not live data or performance claims. Aurum contains
+exactly the twelve research roles from the source application. ReeMove includes
+its genuine mobile welcome screenshot in a moving device frame.
+
+The reel pauses on hover, stops rotating on keyboard/manual interaction, offers
+explicit play/pause and previous/next controls, and supports horizontal touch
+swipes without capturing vertical page scrolling. Inactive slides are inert.
+Illustrations stop offscreen, in background tabs, and with the site's motion
+control or the operating system's reduced-motion preference. No-JavaScript
+visitors can scroll the banner horizontally and follow all four project links.
+
 Keep project statuses accurate. A development project must not silently become
 “Live website.” Add only verified public URLs, never localhost or private dashboards.
 Keep original concept demo URLs available, with fictional/sample-data labels.

@@ -37,7 +37,7 @@ test('all template and runtime strings have complete dedicated locale catalogs',
  const keys=Object.keys(catalogs.en).sort();for(const lang of ['he','ar'])assert.deepEqual(Object.keys(catalogs[lang]).sort(),keys);
  for(const lang of ['en','he','ar']){const ctx=context(lang);sitePages(ctx);demoPages(ctx);header(ctx,'');footer(ctx);}
  for(const key of usedMessages)for(const lang of ['en','he','ar'])assert(catalogs[lang][key],`${lang}: ${key}`);
- for(const name of ['site.js','auth.js','demos.js','auth-service.mjs','motion.js','valid.js']){
+ for(const name of ['site.js','auth.js','demos.js','auth-service.mjs','motion.js','valid.js','project-reel.js']){
   const src=await readFile(`src/browser/${name}`,'utf8');
   for(const [,key] of src.matchAll(/(?:\bt|\btr|\bsay)\('([^']*)'/g))if(key)assert(catalogs.en[key],`Runtime translation missing: ${key}`);
  }
